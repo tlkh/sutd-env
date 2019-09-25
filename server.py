@@ -19,39 +19,35 @@ def crossdomain(origin=None, methods=None, headers=None,
                 max_age=21600, attach_to_all=True,
                 automatic_options=True):
     if methods is not None:
-        methods = ', '.join(sorted(x.upper() for x in methods))
+        methods = ", ".join(sorted(x.upper() for x in methods))
     if headers is not None and not isinstance(headers, list):
-        headers = ', '.join(x.upper() for x in headers)
+        headers = ", ".join(x.upper() for x in headers)
     if not isinstance(origin, list):
-        origin = ', '.join(origin)
+        origin = ", ".join(origin)
     if isinstance(max_age, timedelta):
         max_age = max_age.total_seconds()
 
     def get_methods():
         if methods is not None:
             return methods
-
         options_resp = current_app.make_default_options_response()
-        return options_resp.headers['allow']
+        return options_resp.headers["allow"]
 
     def decorator(f):
         def wrapped_function(*args, **kwargs):
-            if automatic_options and request.method == 'OPTIONS':
+            if automatic_options and request.method == "OPTIONS":
                 resp = current_app.make_default_options_response()
             else:
                 resp = make_response(f(*args, **kwargs))
-            if not attach_to_all and request.method != 'OPTIONS':
+            if not attach_to_all and request.method != "OPTIONS":
                 return resp
-
             h = resp.headers
-
-            h['Access-Control-Allow-Origin'] = origin
-            h['Access-Control-Allow-Methods'] = get_methods()
-            h['Access-Control-Max-Age'] = str(max_age)
+            h["Access-Control-Allow-Origin"] = origin
+            h["Access-Control-Allow-Methods"] = get_methods()
+            h["Access-Control-Max-Age"] = str(max_age)
             if headers is not None:
-                h['Access-Control-Allow-Headers'] = headers
+                h["Access-Control-Allow-Headers"] = headers
             return resp
-
         f.provide_automatic_options = False
         return update_wrapper(wrapped_function, f)
     return decorator
@@ -85,6 +81,50 @@ def retrieve_pollutants_external(h_timestamp):
               "psi_twenty_four_hourly": psi_24h}
     return output
 
+def get_realtime_weather_value(api_url, station_id="S107"):
+    response = requests.get(api_url).content
+    readings = json.loads(response)["items"][0]["readings"]
+    output = "No Data"
+    for reading in readings:
+        if reading["station_id"] == station_id:
+            output = reading["value"]
+            break
+    return output
+
+
+def retrieve_weather_external():
+    """
+    Returns the maximum resolution readings for weather conditions.
+    """
+    try:
+        air_temp = get_realtime_weather_value("https://api.data.gov.sg/v1/environment/air-temperature")
+        rainfall = get_realtime_weather_value("https://api.data.gov.sg/v1/environment/rainfall")
+        humidity = get_realtime_weather_value("https://api.data.gov.sg/v1/environment/relative-humidity")
+        wind_direction = get_realtime_weather_value("https://api.data.gov.sg/v1/environment/wind-direction")
+        wind_speed = get_realtime_weather_value("https://api.data.gov.sg/v1/environment/wind-speed")
+        API_URL = "https://api.data.gov.sg/v1/environment/2-hour-weather-forecast"
+        response = requests.get(API_URL).content
+        readings = json.loads(response)["items"][0]["forecasts"]
+        for reading in readings:
+            if reading["area"] == "Changi":
+                forecast = reading["forecast"]
+                break
+    except Exception as e:
+        print("Error!", e)
+        air_temp = "error"
+        rainfall = "error"
+        humidity = "error"
+        wind_direction = "error"
+        wind_speed = "error"
+        forecast = "error"
+    output = {"air_temp": air_temp,
+              "rainfall": rainfall,
+              "humidity": humidity,
+              "wind_direction": wind_direction,
+              "wind_speed": wind_speed,
+              "forecast": forecast}
+    return output
+
 
 @functools.lru_cache(maxsize=64, typed=False)
 def retrieve_pm25_external(h_timestamp):
@@ -108,7 +148,6 @@ def get_traffic_cam_images(calculate_m_timestamp):
     output = {}
     for camera in cameras_list:
         if camera["camera_id"] in list(camera_ids.keys()):
-            camera_name = camera_ids[camera["camera_id"]]
             camera_img_url = camera["image"]
             output[camera["camera_id"]] = camera_img_url
             count += 1
@@ -165,6 +204,9 @@ def get_pollutants():
 def get_weather():
     data = {"success": False}
     if flask.request.method == "GET":
+        weather_data = retrieve_weather_external()
+        for key in list(weather_data.keys()):
+            data[key] = weather_data[key]
         data["success"] = True
     return flask.jsonify(data)
 
@@ -185,4 +227,4 @@ def get_traffic_cam():
 # if file was executed by itself, start the server process
 if __name__ == "__main__":
     print(" * [i] Starting Flask server")
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host="0.0.0.0", port=5000)
