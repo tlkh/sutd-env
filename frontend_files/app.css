@@ -1,0 +1,37 @@
+body {
+  padding-top: 5rem;
+}
+
+.app {
+  text-align: center;
+}
+
+.header-image {
+  margin-top: -5em;
+  margin-bottom: 1em;
+  padding: 0px;
+}
+
+.bg-translucent-dark {
+  background-color: rgba(30, 30, 30, 0.8)
+}
+
+.traffic-cam-img {
+  width: 100%;
+  padding: 1px;
+}
+
+.bd-placeholder-img {
+  font-size: 1.125rem;
+  text-anchor: middle;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+@media (min-width: 768px) {
+  .bd-placeholder-img-lg {
+    font-size: 3.5rem;
+  }
+}
