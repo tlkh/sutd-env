@@ -36,7 +36,8 @@
         <div class="card" style="width:100%;">
           <div class="card-body">
             <h5 class="card-title" id="large_forecast">...</h5>
-            <h6 class="card-subtitle mb-2 text-muted">Weather Forecast</h6>
+            <h6 class="card-subtitle mb-2 text-muted">Weather Conditions</h6>
+            <h6 class="card-subtitle mb-2 text-muted">2-hour Forecast</h6>
             <a href="https://www.nea.gov.sg/weather" class="card-link">NEA Weather</a>
             <a href="https://www.nea.gov.sg/weather/rain-areas" class="card-link">NEA Rain Areas</a>
           </div>
@@ -47,8 +48,21 @@
           <div class="card-body">
             <h5 class="card-title" id="large_air_temp">...</h5>
             <h6 class="card-subtitle mb-2 text-muted">Air Temperature</h6>
-            <a href="#" class="card-link">Feels higher</a>
-            <a href="#" class="card-link">Feels lower</a>
+            <h6 class="card-subtitle mb-2 text-muted" id="temp_votes">...</h6>
+            <div class="btn-group">
+              <form
+                action="http://localhost:5000/vote_item?username=webapp&api_key=3194142933356828989&&item=temp&mod_state=1"
+                method="post">
+                <button type="submit" name="btn_temp_higher" class="btn btn-success btn-sm"
+                  style="border-top-right-radius:0;border-bottom-right-radius:0;">Feels Higher</button>
+              </form>
+              <form
+                action="http://localhost:5000/vote_item?username=webapp&api_key=3194142933356828989&&item=temp&mod_state=-1"
+                method="post">
+                <button type="submit" name="btn_temp_lower" class="btn btn-danger btn-sm"
+                  style="border-top-left-radius:0;border-bottom-left-radius:0;">Feels Lower</button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
@@ -57,8 +71,21 @@
           <div class="card-body">
             <h5 class="card-title" id="large_psi">...</h5>
             <h6 class="card-subtitle mb-2 text-muted">PSI Reading</h6>
-            <a href="#" class="card-link">Feels higher</a>
-            <a href="#" class="card-link">Feels lower</a>
+            <h6 class="card-subtitle mb-2 text-muted" id="psi_votes">...</h6>
+            <div class="btn-group">
+              <form
+                action="http://localhost:5000/vote_item?username=webapp&api_key=3194142933356828989&&item=psi&mod_state=1"
+                method="post">
+                <button type="submit" name="btn_psi_higher" class="btn btn-success btn-sm"
+                  style="border-top-right-radius:0;border-bottom-right-radius:0;">Feels Higher</button>
+              </form>
+              <form
+                action="http://localhost:5000/vote_item?username=webapp&api_key=3194142933356828989&&item=psi&mod_state=-1"
+                method="post">
+                <button type="submit" name="btn_psi_lower" class="btn btn-danger btn-sm"
+                  style="border-top-left-radius:0;border-bottom-left-radius:0;">Feels Lower</button>
+              </form>
+            </div>
           </div>
         </div>
       </div>

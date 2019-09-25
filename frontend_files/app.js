@@ -1,13 +1,13 @@
 document.addEventListener('DOMContentLoaded', function () {
-    console.log("Started!");
     var cam_6713 = document.getElementById("cam_6713"); // PIE (Outside CGH)
     var cam_7791 = document.getElementById("cam_7791"); // TPE (Upper Changi North)
     var cam_6711 = document.getElementById("cam_6711"); // PIE (Airport)
     var cam_3705 = document.getElementById("cam_3705"); // ECP (NSRCC)
-
     var large_air_temp = document.getElementById("large_air_temp");
     var large_psi = document.getElementById("large_psi");
     var large_forecast = document.getElementById("large_forecast");
+    var temp_votes = document.getElementById("temp_votes");
+    var psi_votes = document.getElementById("psi_votes");
     var display_psi_24h = document.getElementById("psi_24h");
     var display_pm25_1h = document.getElementById("pm25_1h");
     var display_no2_1h = document.getElementById("no2_1h");
@@ -20,7 +20,6 @@ document.addEventListener('DOMContentLoaded', function () {
     var display_wind_direction = document.getElementById("wind_direction");
     var display_wind_speed = document.getElementById("wind_speed");
 
-    console.log("Making requests...");
     // weather
     var xhr = new XMLHttpRequest();
     xhr.open("GET", "http://127.0.0.1:5000/weather");
@@ -67,6 +66,13 @@ document.addEventListener('DOMContentLoaded', function () {
         display_co_8h.innerHTML = json["co_8h"];
         display_so2_24h.innerHTML = json["so2_24h"];
     };
-
-    console.log("Done!");
+    // votes
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "http://127.0.0.1:5000/get_votes");
+    xhr.send();
+    xhr.onload = function () {
+        var json = JSON.parse(this.responseText);
+        temp_votes.innerHTML = json["temp"];
+        psi_votes.innerHTML = json["psi"];
+    };
 });
