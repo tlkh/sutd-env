@@ -1,3 +1,5 @@
+import os
+import datetime
 import json
 import requests
 import functools
@@ -8,7 +10,7 @@ camera_ids = {"6713": "PIE (Outside CGH)",
               "3705": "ECP (NSRCC)"}
 
 LRU_CACHE_SIZE = 32
-
+DATAMALL_KEY = os.environ["DATAMALL_KEY"]
 
 @functools.lru_cache(maxsize=LRU_CACHE_SIZE, typed=False)
 def retrieve_pollutants_external(h_timestamp):
@@ -117,3 +119,26 @@ def get_traffic_cam_images(calculate_m_timestamp):
             if count == total_count:
                 break
     return output
+
+
+def get_simei_bus():
+    """
+    Returns ETA for next bus (5) to Simei
+    """
+    API_URL = "http://datamall2.mytransport.sg/ltaodataservice/BusArrivalv2?BusStopCode=96049"
+    current_time = datetime.datetime.now().minute
+    response = requests.get(
+        API_URL, headers={"AccountKey": DATAMALL_KEY})
+    response = json.loads(response.content)
+    services = response["Services"]
+    for service in services:
+        if service["ServiceNo"] == "5":
+            # get something like `2019-09-26T17:43:15+08:00`
+            next_bus = service["NextBus"]["EstimatedArrival"]
+            break
+    next_bus = int(next_bus.split(":")[1])
+    eta = next_bus - current_time
+    if eta < 0:
+        eta += 60
+    return eta
+

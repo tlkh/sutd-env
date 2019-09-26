@@ -152,6 +152,16 @@ def get_traffic_cam():
     return jsonify(data)
 
 
+@app.route("/next_bus_simei", methods=["GET"])
+@crossdomain(origin="*")
+def get_simei_bus_time():
+    data = {"success": False}
+    if flask.request.method == "GET":
+        data["next_bus"] = ext_api.get_simei_bus()
+        data["success"] = True
+    return jsonify(data)
+
+
 @app.route("/vote_item", methods=["POST"])
 @crossdomain(origin="*")
 @requires_auth

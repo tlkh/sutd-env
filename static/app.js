@@ -6,6 +6,7 @@ document.addEventListener('DOMContentLoaded', function () {
     var large_air_temp = document.getElementById("large_air_temp");
     var large_psi = document.getElementById("large_psi");
     var large_forecast = document.getElementById("large_forecast");
+    var simei_bus_eta = document.getElementById("simei_bus_eta");
     var temp_votes = document.getElementById("temp_votes");
     var psi_votes = document.getElementById("psi_votes");
     var display_psi_24h = document.getElementById("psi_24h");
@@ -20,6 +21,14 @@ document.addEventListener('DOMContentLoaded', function () {
     var display_wind_direction = document.getElementById("wind_direction");
     var display_wind_speed = document.getElementById("wind_speed");
 
+    // simei bus time
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "http://127.0.0.1:5000/next_bus_simei");
+    xhr.send();
+    xhr.onload = function () {
+        var json = JSON.parse(this.responseText);
+        simei_bus_eta.innerHTML = json["next_bus"];
+    };
     // weather
     var xhr = new XMLHttpRequest();
     xhr.open("GET", "http://127.0.0.1:5000/weather");
