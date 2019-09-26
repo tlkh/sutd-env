@@ -240,9 +240,16 @@ def get_votes():
     return jsonify(data)
 
 
+# pages
+
 @app.route("/", methods=["GET"])
 def get_index():
     return render_template("index.html")
+
+
+@app.route("/about", methods=["GET"])
+def get_about():
+    return render_template("about.html")
 
 
 # if file was executed by itself, start the server process
