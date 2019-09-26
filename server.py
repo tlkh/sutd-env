@@ -1,8 +1,8 @@
 import json
 import flask
+from flask import make_response, request, current_app, render_template, jsonify
+from functools import update_wrapper, wraps
 from datetime import timedelta
-from flask import make_response, request, current_app
-from functools import update_wrapper
 import requests
 
 import utils
@@ -17,10 +17,7 @@ state = {"temp_vote_higher": 0,
          "psi_vote_higher": 0}
 
 # hard-coded users just for lab demo purposes
-users = {"webapp": "3194142933356828989"}
-
-print(" * [i] List of users:")
-print(users)
+users = {"webapp": "password1"}
 
 
 def crossdomain(origin=None, methods=None, headers=None,
@@ -65,6 +62,30 @@ def crossdomain(origin=None, methods=None, headers=None,
     return decorator
 
 
+def check_auth(username, password):
+    return password == users[username]
+
+
+def authenticate():
+    message = {"message": "Please authenticate!"}
+    resp = jsonify(message)
+    resp.status_code = 401
+    resp.headers["WWW-Authenticate"] = "Basic realm='Example'"
+    return resp
+
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth:
+            return authenticate()
+        elif not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
+
+
 @app.route("/air_quality", methods=["GET"])
 @crossdomain(origin="*")
 def get_air_quality():
@@ -79,7 +100,7 @@ def get_air_quality():
         data["pm25_1h"] = ext_api.retrieve_pm25_external(h_timestamp)[
             "pm25_one_hourly"]
         data["success"] = True
-    return flask.jsonify(data)
+    return jsonify(data)
 
 
 @app.route("/pollutants", methods=["GET"])
@@ -97,7 +118,7 @@ def get_pollutants():
         data["co_8h"] = pollutants["co_eight_hour_max"]
         data["so2_24h"] = pollutants["so2_twenty_four_hourly"]
         data["success"] = True
-    return flask.jsonify(data)
+    return jsonify(data)
 
 
 @app.route("/weather", methods=["GET"])
@@ -112,7 +133,7 @@ def get_weather():
         for key in list(weather_data.keys()):
             data[key] = weather_data[key]
         data["success"] = True
-    return flask.jsonify(data)
+    return jsonify(data)
 
 
 @app.route("/traffic_cam", methods=["GET"])
@@ -128,53 +149,46 @@ def get_traffic_cam():
         for key in list(cam_images.keys()):
             data[key] = cam_images[key]
         data["success"] = True
-    return flask.jsonify(data)
+    return jsonify(data)
 
 
 @app.route("/vote_item", methods=["POST"])
 @crossdomain(origin="*")
+@requires_auth
 def vote_item():
     """
     Authenticates and add votes to an item.
     """
     data = {"success": False}
     if flask.request.method == "POST":
-        username = request.args.get("username")
-        api_key = request.args.get("api_key")
-        if username is None or api_key is None:
-            data["message"] = "Require authentication!"
-            return flask.jsonify(data)
-        else:
-            try:
-                if api_key == users[username]:
-                    item = request.args.get("item")
-                    mod_state = str(request.args.get("mod_state"))
-                    if item == "temp":
-                        if mod_state == "1":
-                            state["temp_vote_higher"] += 1
-                        elif mod_state == "-1":
-                            state["temp_vote_lower"] += 1
-                        else:
-                            data["message"] = "Invalid mod_state"
-                            return flask.jsonify(data)
-                    elif item == "psi":
-                        if mod_state == "1":
-                            state["psi_vote_higher"] += 1
-                        elif mod_state == "-1":
-                            state["psi_vote_lower"] += 1
-                        else:
-                            data["message"] = "Invalid mod_state"
-                            return flask.jsonify(data)
+        try:
+            item = request.args.get("item")
+            mod_state = str(request.args.get("mod_state"))
+            if item == "temp":
+                if mod_state == "1":
+                    state["temp_vote_higher"] += 1
+                elif mod_state == "-1":
+                    state["temp_vote_lower"] += 1
                 else:
-                    data["message"] = "Authentication failed!"
-                    return flask.jsonify(data)
-            except Exception as e:
-                print("Error:", e)
-                print("Probably user not in database!")
-                data["message"] = e
-                return flask.jsonify(data)
-            data = {"success": True}
-            return flask.jsonify(data)
+                    data["message"] = "Invalid mod_state"
+                    return jsonify(data)
+            elif item == "psi":
+                if mod_state == "1":
+                    state["psi_vote_higher"] += 1
+                elif mod_state == "-1":
+                    state["psi_vote_lower"] += 1
+                else:
+                    data["message"] = "Invalid mod_state"
+                    return jsonify(data)
+            else:
+                data["message"] = "Authentication failed!"
+                return jsonify(data)
+        except Exception as e:
+            print("Error:", e)
+            data["message"] = e
+            return jsonify(data)
+        data = {"success": True}
+        return render_template("index.html")
 
 
 @app.route("/get_votes", methods=["GET"])
@@ -185,28 +199,40 @@ def get_votes():
     """
     data = {"success": False}
     if flask.request.method == "GET":
+        total = state["temp_vote_higher"] + state["temp_vote_lower"]
         # temperature response
         if state["temp_vote_higher"] > state["temp_vote_lower"]:
-            diff = str(state["temp_vote_higher"] - state["temp_vote_lower"])
-            temp_text = diff + "people feel the temperature is higher."
+            diff = state["temp_vote_higher"]/total
+            diff = str(int(diff*100))
+            temp_text = diff + "% Feels Warmer"
         elif state["temp_vote_higher"] < state["temp_vote_lower"]:
-            diff = str(state["temp_vote_lower"] - state["temp_vote_higher"])
-            temp_text = diff + " people feel the temperature is lower."
+            diff = state["temp_vote_lower"]/total
+            diff = str(int(diff*100))
+            temp_text = diff + "% Feels Cooler"
         else:
-            temp_text = "People think the temperature is accurate."
+            temp_text = "Feels Accurate"
+        total = state["temp_vote_higher"] + state["temp_vote_lower"]
         # psi response
+        total = state["psi_vote_higher"] + state["psi_vote_lower"]
         if state["psi_vote_higher"] > state["psi_vote_lower"]:
-            diff = str(state["psi_vote_higher"] - state["psi_vote_lower"])
-            psi_text = diff + " people feel the PSI is higher."
+            diff = state["psi_vote_higher"]/total
+            diff = str(int(diff*100))
+            psi_text = diff + "% Feels Worse"
         elif state["psi_vote_higher"] < state["psi_vote_lower"]:
-            diff = str(state["psi_vote_lower"] - state["psi_vote_higher"])
-            psi_text = diff + " people feel the PSI is lower."
+            diff = state["psi_vote_lower"]/total
+            diff = str(int(diff*100))
+            psi_text = diff + "% Feels Better"
         else:
-            psi_text = "People think the PSI is accurate."
+            psi_text = "Feels Accurate"
         data["temp"] = temp_text
         data["psi"] = psi_text
         data["success"] = True
-    return flask.jsonify(data)
+    return jsonify(data)
+
+
+@app.route("/", methods=["GET"])
+def get_index():
+    return render_template("index.html")
 
 
 # if file was executed by itself, start the server process
