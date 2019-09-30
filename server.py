@@ -200,6 +200,19 @@ def vote_item():
         data = {"success": True}
         return render_template("index.html")
 
+@app.route("/reset_votes", methods=["POST"])
+@crossdomain(origin="*")
+@requires_auth
+def reset_votes():
+    data = {"success": False}
+    if flask.request.method == "POST":
+        global state
+        state = {"temp_vote_higher": 0,
+                 "temp_vote_lower": 0,
+                 "psi_vote_lower": 0,
+                 "psi_vote_higher": 0}
+        data = {"success": True}
+        return render_template("about.html")
 
 @app.route("/get_votes", methods=["GET"])
 @crossdomain(origin="*")
