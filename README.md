@@ -18,7 +18,7 @@
 * `/get_votes`: returns if PSI or temperature feels higher or lower
 
 * `/`: returns the front-end HTML page
-* `/`: returns the front-end about page
+* `/about`: returns the front-end about page
 
 **POST**
 
